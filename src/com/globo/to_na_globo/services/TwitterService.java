@@ -1,8 +1,12 @@
 package com.globo.to_na_globo.services;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -36,16 +40,21 @@ public class TwitterService {
 	private BlockingQueue<String> msgQueue;
 	private BlockingQueue<Event> eventQueue;
 	private Authentication hosebirdAuth;
-	private Map<String, Object> servicesMap;
+	private Map<Long, TwitterStalker> stalkersMap;
 	
 	private TwitterService() {
 		msgQueue = new LinkedBlockingQueue<String>(100000);
 		eventQueue = new LinkedBlockingQueue<Event>(1000);
 		hosebirdAuth = new OAuth1(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN_KEY, ACCESS_TOKEN_SECRET);
+		stalkersMap = new HashMap<>();
 	}
 	
-	public void scheduleService(Campaign campaign) {
-		
+	public void scheduleService(Campaign campaign, VoteItem... items) {
+		if (Calendar.getInstance().getTime().getTime() > campaign.getStartDate().getTime())
+			return;
+		TimerTask task = new CampaignStarter(campaign, items);
+		Timer timer = new Timer();
+		timer.schedule(task, campaign.getStartDate());
 	}
 	
 	public void startService(Campaign campaign, VoteItem... items) {
@@ -63,6 +72,32 @@ public class TwitterService {
 				  .endpoint(hosebirdEndpoint)
 				  .processor(new StringDelimitedProcessor(msgQueue))
 				  .eventMessageQueue(eventQueue);
+		Client client = builder.build();
+		TwitterStalker stalker = new TwitterStalker(client);
+		stalkersMap.put(campaign.getId(), stalker);
+		stalker.start();
+	}
+	
+	public void stopService(Campaign campaign) {
+		TwitterStalker stalker = stalkersMap.get(campaign.getId());
+		if (stalker != null)
+			stalker.interrupt();
+	}
+	
+	private class CampaignStarter extends TimerTask {
+		
+		private Campaign campaign;
+		private VoteItem[] voteItems;
+		
+		public CampaignStarter(Campaign campaign, VoteItem[] voteItems) {
+			this.campaign = campaign;
+			this.voteItems = voteItems;
+		}
+		
+		@Override
+		public void run() {
+			TwitterService.this.startService(campaign, voteItems);
+		}
 		
 	}
 	
@@ -70,8 +105,9 @@ public class TwitterService {
 		
 		private Client hosebirdClient;
 		
-		public TwitterStalker(ClientBuilder clientBuilder) {
-			hosebirdClient = clientBuilder.build();
+		public TwitterStalker(Client client) {
+			super();
+			hosebirdClient = client;
 		}
 		
 		@Override
@@ -82,6 +118,12 @@ public class TwitterService {
 			    something(msg);
 			    profit();
 			}
+		}
+		
+		@Override
+		public void interrupt() {
+			hosebirdClient.stop();
+			super.interrupt();
 		}
 		
 	}

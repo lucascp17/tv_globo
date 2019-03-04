@@ -51,8 +51,9 @@ public class VoteItemService {
 	public List<VoteItem> allByCampaign(long campaignId) throws Exception {
 		String sql = "select id, keyword from VoteItems where owner=?";
 		Connection conn = DataService.createConnection();
-		Statement stmt = conn.createStatement();
-		ResultSet set = stmt.executeQuery(sql);
+		PreparedStatement stmt = conn.prepareStatement(sql);
+		stmt.setLong(1, campaignId);
+		ResultSet set = stmt.executeQuery();
 		List<VoteItem> list = new ArrayList<>();
 		while (set.next()) {
 			long id = set.getLong(1);

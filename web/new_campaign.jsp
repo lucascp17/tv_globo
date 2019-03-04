@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="style/bootstrap.min.css"/>
+	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/style/bootstrap.min.css"/>
 	<meta charset="UTF-8"/>
 	<title>
 		Projeto TV Globo

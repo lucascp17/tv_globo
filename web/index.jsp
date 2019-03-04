@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="style/bootstrap.min.css"/>
+	<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/style/bootstrap.min.css"/>
 	<meta charset="UTF-8"/>
 	<title>
 		Projeto TV Globo
@@ -50,16 +50,16 @@
 				</table>
 			</div>
 			<div class="mb-3 text-center" style="margin-top: 50px;">
-				<a class="btn btn-primary btn-lg" href="new_campaign.jsp">
+				<a class="btn btn-primary btn-lg" href="${pageContext.request.contextPath}/new_campaign.jsp">
 					Criar campanha
 				</a>
 			</div>
 		</div>
 	</div>
-	<script type="text/javascript" src="engine/core.js"></script>
+	<script type="text/javascript" src="${pageContext.request.contextPath}/engine/core.js"></script>
 	<script type="text/javascript">
 		function init() {
-			getCampaigns().then(list => {
+			getAllCampaigns().then(list => {
 				document.getElementById('loading_section').style.display = 'none';
 				if (list.length > 0) {
 					let table = document.getElementById('campaign_table');
@@ -79,7 +79,7 @@
 							cell.innerHTML = toPtBr(list[i].endDate) + " " + list[i].endTime;
 						row.appendChild(cell);
 						row.style.cursor = 'pointer';
-						row.onclick = () => { window.document.location = 'view_campaign.jsp?campaign=' + list[i].id };
+						row.onclick = () => { window.document.location = '${pageContext.request.contextPath}/view_campaign.jsp?campaign=' + list[i].id };
 						table.appendChild(row);
 					}
 					document.getElementById('campaigns_section').style.display = 'block';

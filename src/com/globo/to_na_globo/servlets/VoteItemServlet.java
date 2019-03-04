@@ -45,6 +45,7 @@ public class VoteItemServlet extends HttpServlet {
 				list.add(object);
 			}
 			JSONArray array = new JSONArray(list);
+			response.setHeader("content-type", "application/json");
 			PrintWriter writer = response.getWriter();
 			writer.println(array);
 			writer.flush();

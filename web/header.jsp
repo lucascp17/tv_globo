@@ -1,5 +1,5 @@
 <div class="py-5 text-center">
-	<img class="d-block mx-auto mb-4" src="asset/logo_globo.png" width="72" height="72"/>
+	<img class="d-block mx-auto mb-4" src="${pageContext.request.contextPath}/asset/logo_globo.png" width="72" height="72"/>
 	<h1>
 		Rede Globo
 	</h1>

@@ -51,6 +51,15 @@ public class CampaignService {
 		return result;
 	}
 	
+	public void cancel(long campaignId) throws Exception {
+		String sql = "update Campaigns set canceled=1 where id=?";
+		Connection conn = DataService.createConnection();
+		PreparedStatement stmt = conn.prepareStatement(sql);
+		stmt.setLong(1, campaignId);
+		stmt.executeUpdate();
+		conn.close();
+	}
+	
 	public void save(Campaign campaign) throws Exception {
 		if (campaign == null)
 			throw new Exception("The param campaign cannot be null");
@@ -58,7 +67,7 @@ public class CampaignService {
 			throw new Exception("The param name cannot be null");
 		if (campaign.getStartDate() == null)
 			throw new Exception("The param startDate cannot be null");
-		String sql = "update Campaigns set name=?, keyword=?, start_date=?, end_date=? where id=? and canceled=FALSE";
+		String sql = "update Campaigns set name=?, keyword=?, start_date=?, end_date=? where id=? and canceled=0";
 		Connection conn = DataService.createConnection();
 		PreparedStatement stmt = conn.prepareStatement(sql);
 		stmt.setString(1, campaign.getName());
@@ -72,7 +81,7 @@ public class CampaignService {
 	}
 	
 	public Campaign get(long id) throws Exception {
-		String sql = "select name, keyword, start_date, end_date from Campaigns where id=? and canceled=FALSE";
+		String sql = "select name, keyword, start_date, end_date from Campaigns where id=? and canceled=0";
 		Connection conn = DataService.createConnection();
 		PreparedStatement stmt = conn.prepareStatement(sql);
 		stmt.setLong(1, id);
@@ -95,7 +104,7 @@ public class CampaignService {
 	}
 	
 	public List<Campaign> all() throws Exception {
-		String sql = "select id, name, keyword, start_date, end_date from Campaigns where canceled=FALSE";
+		String sql = "select id, name, keyword, start_date, end_date from Campaigns where canceled=0";
 		Connection conn = DataService.createConnection();
 		Statement stmt = conn.createStatement();
 		ResultSet set = stmt.executeQuery(sql);

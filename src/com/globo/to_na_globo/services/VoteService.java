@@ -29,14 +29,14 @@ public class VoteService {
 		PreparedStatement stmt = conn.prepareStatement(sql);
 		stmt.setLong(1, campaignId);
 		stmt.setLong(2, itemId);
-		stmt.setDate(3, new java.sql.Date(cal.getTime().getTime()));
+		stmt.setTimestamp(3, new java.sql.Timestamp(cal.getTime().getTime()));
 		stmt.setString(4, timeSignature);
 		stmt.executeUpdate();
 		conn.close();
 	}
 	
 	public List<Object[]> getVotesStats(long campaignId) throws Exception {
-		String sql = "select time_signature, count(id) from Votes where id=? group by time_signature";
+		String sql = "select time_signature, count(id) from Votes where owner = ? group by time_signature";
 		Connection conn = DataService.createConnection();
 		PreparedStatement stmt = conn.prepareStatement(sql);
 		stmt.setLong(1, campaignId);

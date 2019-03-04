@@ -54,6 +54,7 @@
 	<script type="text/javascript" src="engine/core.js"></script>
 	<script type="text/javascript">
 		let campaignId = ${param.campaign};
+		let votesChart = null;
 		function goBack() {
 			window.history.back();
 		}
@@ -78,35 +79,94 @@
 				return '#5DADE2';
 			}
 		}
-		function drawDashboard() {
-		      var ctx = document.getElementById("dashboard_canvas");
-		      ctx.style.display = 'block';
-		      var myChart = new Chart(ctx, {
-				  type: 'line',
-				  data: {
-					  labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-					  datasets: [{
-						  data: [15339, 21345, 18483, 24003, 23489, 24092, 12034],
-						  lineTension: 0,
-						  backgroundColor: 'transparent',
-						  borderColor: '#007bff',
-						  borderWidth: 4,
-						  pointBackgroundColor: '#007bff'
-					  }]
-				  },
-				  options: {
-					  scales: {
-						  yAxes: [{
-							  ticks: {
-								  beginAtZero: false
-							  }
-						  }]
-				  	  },
-				  	  legend: {
-				  		  display: false
-			  		  }
-				  }
-			  });
+		function watchVotes(itemId) {
+			currentCount(itemId).then(newCount => {
+				let compId = 'highlighted_' + itemId;
+				let comp = document.getElementById(compId);
+				comp.innerHTML = newCount;
+			});
+			setTimeout(() => watchVotes(itemId), 3000);
+		}
+		function watchStats() {
+			getVoteStats(campaignId).then(stats => {
+				if (stats.length > 0) {
+					drawDashboard(stats);
+				} else {
+					document.getElementById('no_stats').style.display = 'block';
+				}
+				setTimeout(() => watchStats(), 3000);
+			});
+		}
+		function drawDashboard(stats) {
+			if (votesChart === null) {
+				drawDashboardFirstTime(stats);
+				return;
+			}
+			for (let i = 0; i < stats.length; ++i) {
+				let tokens = stats[i].time.split("-");
+				let year = parseInt(tokens[0]);
+				let month = parseInt(tokens[1]) + 1;
+				let day = parseInt(tokens[2]);
+				let hour = parseInt(tokens[3]);
+				let label = "" + day + "/" + month + "/" + year + " " + hour + ":00";
+				let index = -1;
+				for (let j = 0; j < votesChart.data.labels.length; ++j) {
+					if (label === votesChart.data.labels[j]) {
+						index = j;
+						break;
+					}
+				}
+				if (index < 0) {
+					votesChart.data.labels.push(label);
+					votesChart.data.datasets.forEach((dataset) => dataset.data.push(stats[i].count));
+				} else {
+					votesChart.data.datasets.forEach((dataset) => dataset.data[index] = stats[i].count);
+				}
+				votesChart.update();
+			}
+		}
+		function drawDashboardFirstTime(stats) {
+			let statsLabels = [];
+			let statsData = [];
+			for (let i = 0; i < stats.length; ++i) {
+				let tokens = stats[i].time.split("-");
+				let year = parseInt(tokens[0]);
+				let month = parseInt(tokens[1]) + 1;
+				let day = parseInt(tokens[2]);
+				let hour = parseInt(tokens[3]);
+				let label = "" + day + "/" + month + "/" + year + " " + hour + ":00";
+				statsLabels.push(label);
+				statsData.push(stats[i].count);
+			}
+			document.getElementById('no_stats').style.display = 'none';
+		    var ctx = document.getElementById("dashboard_canvas");
+		    ctx.style.display = 'block';
+		    votesChart = new Chart(ctx, {
+				type: 'line',
+				data: {
+					labels: statsLabels,
+					datasets: [{
+						data: statsData,
+						lineTension: 0,
+						backgroundColor: 'transparent',
+						borderColor: '#007bff',
+						borderWidth: 4,
+						pointBackgroundColor: '#007bff'
+					}]
+				},
+				options: {
+					scales: {
+						yAxes: [{
+							ticks: {
+								beginAtZero: false
+							}
+						}]
+					},
+					legend: {
+						display: false
+					}
+				}
+			});
 		}
 		function init() {
 			getCampaign(campaignId).then(campaign => {
@@ -135,19 +195,15 @@
 					content.style.background = switchBackground(i);
 					content.style.color = 'white';
 					let highlighted = document.createElement('h1');
-					highlighted.innerHTML = '0';
+					highlighted.id = 'highlighted_' + list[i].id;
+					highlighted.innerHTML = list[i].votes;
 					content.appendChild(highlighted);
 					card.appendChild(content);
 					row.appendChild(card);
+					watchVotes(list[i].id);
 				}
 			});
-			getVoteStats(campaignId).then(stats => {
-				if (stats.length > 0) {
-					drawDashboard();
-				} else {
-					document.getElementById('no_stats').style.display = 'block';
-				}
-			});
+			watchStats();
 		}
 		function cancelPageCampaign() {
 			let elems = document.getElementsByClassName('btn');

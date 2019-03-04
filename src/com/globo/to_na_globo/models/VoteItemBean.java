@@ -5,6 +5,7 @@ public class VoteItemBean implements VoteItem {
 	private long id;
 	private long owner;
 	private String keyWord;
+	private long votes;
 
 	@Override
 	public int compareTo(VoteItem o) {
@@ -45,6 +46,16 @@ public class VoteItemBean implements VoteItem {
 	@Override
 	public void setOwner(long id) {
 		this.owner = id;
+	}
+	
+	@Override
+	public long getVotes() {
+		return this.votes;
+	}
+	
+	@Override
+	public void setVotes(long votes) {
+		this.votes = votes;
 	}
 
 }

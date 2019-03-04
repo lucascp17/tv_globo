@@ -1,7 +1,6 @@
 package com.globo.to_na_globo.services;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,9 +9,10 @@ import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.json.JSONObject;
+
 import com.globo.to_na_globo.models.Campaign;
 import com.globo.to_na_globo.models.VoteItem;
-import com.google.common.collect.Lists;
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.Constants;
@@ -50,11 +50,16 @@ public class TwitterService {
 	}
 	
 	public void scheduleService(Campaign campaign, VoteItem... items) {
-		if (Calendar.getInstance().getTime().getTime() > campaign.getStartDate().getTime())
+		long currentTime = System.currentTimeMillis();
+		if (campaign.getEndDate() != null && campaign.getEndDate().getTime() < currentTime)
 			return;
-		TimerTask task = new CampaignStarter(campaign, items);
-		Timer timer = new Timer();
-		timer.schedule(task, campaign.getStartDate());
+		if (currentTime > campaign.getStartDate().getTime()) {
+			startService(campaign, items);
+		} else {
+			TimerTask task = new CampaignStarter(campaign, items);
+			Timer timer = new Timer();
+			timer.schedule(task, campaign.getStartDate());
+		}
 	}
 	
 	public void startService(Campaign campaign, VoteItem... items) {
@@ -73,15 +78,26 @@ public class TwitterService {
 				  .processor(new StringDelimitedProcessor(msgQueue))
 				  .eventMessageQueue(eventQueue);
 		Client client = builder.build();
-		TwitterStalker stalker = new TwitterStalker(client);
+		TwitterStalker stalker = new TwitterStalker(campaign, items, client);
 		stalkersMap.put(campaign.getId(), stalker);
 		stalker.start();
+		if (campaign.getEndDate() != null) {
+			TimerTask finalizer = new CampaignFinalizer(campaign);
+			Timer timer = new Timer();
+			timer.schedule(finalizer, campaign.getEndDate());
+		}
 	}
 	
 	public void stopService(Campaign campaign) {
-		TwitterStalker stalker = stalkersMap.get(campaign.getId());
-		if (stalker != null)
+		stopService(campaign.getId());
+	}
+	
+	public void stopService(long campaignId) {
+		TwitterStalker stalker = stalkersMap.get(campaignId);
+		if (stalker != null) {
 			stalker.interrupt();
+			stalkersMap.remove(campaignId);
+		}
 	}
 	
 	private class CampaignStarter extends TimerTask {
@@ -101,29 +117,151 @@ public class TwitterService {
 		
 	}
 	
-	private class TwitterStalker extends Thread {
+	private class CampaignFinalizer extends TimerTask {
 		
-		private Client hosebirdClient;
+		private Campaign campaign;
 		
-		public TwitterStalker(Client client) {
-			super();
-			hosebirdClient = client;
+		public CampaignFinalizer(Campaign campaign) {
+			this.campaign = campaign;
 		}
 		
 		@Override
-		public void run() {                       
-			hosebirdClient.connect();
-			while (!hosebirdClient.isDone()) {
-			    String msg = msgQueue.take();
-			    something(msg);
-			    profit();
+		public void run() {
+			TwitterService.this.stopService(campaign);
+		}
+		
+	}
+	
+	private class TwitterStalker extends Thread {
+		
+		private Client hosebirdClient;
+		private Campaign campaign;
+		private VoteItem[] items;
+		
+		public TwitterStalker(Campaign campaign, VoteItem[] items, Client client) {
+			super();
+			this.campaign = campaign;
+			this.items = items;
+			this.hosebirdClient = client;
+		}
+		
+		@Override
+		public void run() {
+			try {
+				logServiceStart();
+				hosebirdClient.connect();
+				while (!hosebirdClient.isDone()) {
+				    String msg = msgQueue.take();
+				    try {
+				    	JSONObject msgObject = new JSONObject(msg);
+				    	String text = msgObject.getString("text");
+				    	if (text == null)
+				    		continue;
+				    	if (text.indexOf(campaign.getKeyWord()) < 0)
+				    		continue;
+				    	logMessageReceived(text);
+				    	for (int i = 0; i < items.length; ++i) {
+				    		VoteItem item = items[i];
+				    		int idx = text.indexOf(item.getKeyWord());
+				    		if (idx < 0)
+				    			continue;
+				    		countVote(item);
+				    	}
+				    } catch (Exception exc) {
+				    	
+				    }
+				}
+			} catch (InterruptedException exc) {
+				System.out.println("Interrupted");
 			}
 		}
 		
 		@Override
 		public void interrupt() {
+			logServiceEnd();
 			hosebirdClient.stop();
 			super.interrupt();
+		}
+		
+		private void countVote(VoteItem item) {
+			try {
+				logVoteReceived(item);
+				VoteItemService.instance.countVote(item.getId());
+				VoteService.instance.countVote(campaign.getId(), item.getId());
+			} catch (Exception exc) {
+				System.out.println("ERROR! Something got wrong when couting votes!");
+				exc.printStackTrace();
+			}
+		}
+		
+		private void logServiceStart() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("We are now listening to campaign \"");
+			sb.append(campaign.getName());
+			sb.append("\", keyword \"");
+			sb.append(campaign.getKeyWord());
+			sb.append("\", options ");
+			for (int i = 0; i < items.length; ++i) {
+				if (i > 0)
+					sb.append(", ");
+				sb.append("\"");
+				sb.append(items[i].getKeyWord());
+				sb.append("\"");
+			}
+			String log = sb.toString();
+			System.out.println(log);
+		}
+		
+		private void logServiceEnd() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("We are now interrupting campaign \"");
+			sb.append(campaign.getName());
+			sb.append("\", keyword \"");
+			sb.append(campaign.getKeyWord());
+			sb.append("\", options ");
+			for (int i = 0; i < items.length; ++i) {
+				if (i > 0)
+					sb.append(", ");
+				sb.append("\"");
+				sb.append(items[i].getKeyWord());
+				sb.append("\"");
+			}
+			String log = sb.toString();
+			System.out.println(log);
+		}
+		
+		private void logVoteReceived(VoteItem item) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Received vote from campaign \"");
+			sb.append(campaign.getName());
+			sb.append("\", keyword \"");
+			sb.append(campaign.getKeyWord());
+			sb.append("\", option \"");
+			sb.append(item.getKeyWord());
+			sb.append("\"");
+			String log = sb.toString();
+			System.out.println(log);
+		}
+		
+		private void logMessageReceived(String msg) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Received message from campaign \"");
+			sb.append(campaign.getName());
+			sb.append("\", keyword \"");
+			sb.append(campaign.getKeyWord());
+			sb.append("\", options ");
+			for (int i = 0; i < items.length; ++i) {
+				if (i > 0)
+					sb.append(", ");
+				sb.append("\"");
+				sb.append(items[i].getKeyWord());
+				sb.append("\"");
+			}
+			sb.append(", content: \"");
+			sb.append(msg);
+			sb.append("\"");
+			String log = sb.toString();
+			System.out.println(log);
 		}
 		
 	}

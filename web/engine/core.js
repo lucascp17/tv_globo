@@ -146,3 +146,47 @@ function cancelCampaign(campaign) {
 		ajax.send(JSON.stringify(data));
 	});
 }
+
+function createService(name, keyword, options, startDate, startTime, endDate, endTime) {
+	let data = {
+			name,
+			keyword,
+			options,
+			startDate,
+			startTime,
+			endDate,
+			endTime
+	};
+	return new Promise((resolve, reject) => {
+		const ajax = new XMLHttpRequest();
+		ajax.onreadystatechange = () => {
+			if (ajax.readyState !== 4)
+				return;
+			if (ajax.status === 200)
+				resolve(JSON.parse(ajax.responseText));
+			else
+				reject(ajax.status);
+		};
+		ajax.open('post', 'service', true);
+		ajax.setRequestHeader('content-type', 'application/json');
+		ajax.setRequestHeader('accepts', 'application/json');
+		ajax.send(JSON.stringify(data));
+	});
+}
+
+function currentCount(itemId) {
+	return new Promise((resolve, reject) => {
+		const ajax = new XMLHttpRequest();
+		ajax.onreadystatechange = () => {
+			if (ajax.readyState !== 4)
+				return;
+			if (ajax.status === 200)
+				resolve(JSON.parse(ajax.responseText));
+			else
+				reject(ajax.status);
+		};
+		ajax.open('get', 'votecount?voteitem=' + itemId, true);
+		ajax.setRequestHeader('accepts', 'application/json');
+		ajax.send();
+	});
+}

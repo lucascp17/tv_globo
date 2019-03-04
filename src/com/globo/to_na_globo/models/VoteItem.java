@@ -10,5 +10,8 @@ public interface VoteItem extends Comparable<VoteItem> {
 	
 	String getKeyWord();
 	void setKeyWord(String keyWord);
+	
+	long getVotes();
+	void setVotes(long votes);
 
 }

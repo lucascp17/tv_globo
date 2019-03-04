@@ -49,11 +49,6 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="mb-3 text-center" style="margin-top: 50px;">
-				<a class="btn btn-primary btn-lg" href="${pageContext.request.contextPath}/new_campaign.jsp">
-					Criar campanha
-				</a>
-			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="${pageContext.request.contextPath}/engine/core.js"></script>

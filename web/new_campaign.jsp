@@ -135,12 +135,9 @@
 			let startTime = document.campaign_data.campaign_start_time.value;
 			let endDate = document.campaign_data.campaign_end_date.value;
 			let endTime = document.campaign_data.campaign_end_time.value;
-			let voteItemsGross = document.campaign_data.campaign_vote_items.value;
-			createCampaign(name, keyword, startDate, startTime, endDate, endTime).then(id => {
-				let voteItems = voteItemsGross.split(";");
-				createVoteItems(id, voteItems).then(ids => {
-					window.history.back();
-				});
+			let options = document.campaign_data.campaign_vote_items.value;
+			createService(name, keyword, options, startDate, startTime, endDate, endTime).then(id => {
+				window.document.location = '${pageContext.request.contextPath}';
 			});
 		}
 	</script>

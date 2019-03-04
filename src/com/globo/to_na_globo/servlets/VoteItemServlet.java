@@ -42,6 +42,7 @@ public class VoteItemServlet extends HttpServlet {
 				object.put("id", item.getId());
 				object.put("campaign", item.getOwner());
 				object.put("keyword", item.getKeyWord());
+				object.put("votes", item.getVotes());
 				list.add(object);
 			}
 			JSONArray array = new JSONArray(list);

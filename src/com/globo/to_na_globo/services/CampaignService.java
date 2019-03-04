@@ -33,8 +33,8 @@ public class CampaignService {
 		PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 		stmt.setString(1, name);
 		stmt.setString(2, keyword);
-		stmt.setDate(3, new java.sql.Date(startDate.getTime()));
-		stmt.setDate(4, endDate == null ? null : new java.sql.Date(endDate.getTime()));
+		stmt.setTimestamp(3, new java.sql.Timestamp(startDate.getTime()));
+		stmt.setTimestamp(4, endDate == null ? null : new java.sql.Timestamp(endDate.getTime()));
 		stmt.executeUpdate();
 		ResultSet keys = stmt.getGeneratedKeys();
 		if (!keys.next())
@@ -72,8 +72,8 @@ public class CampaignService {
 		PreparedStatement stmt = conn.prepareStatement(sql);
 		stmt.setString(1, campaign.getName());
 		stmt.setString(2, campaign.getKeyWord());
-		stmt.setDate(3, new java.sql.Date(campaign.getStartDate().getTime()));
-		stmt.setDate(4, campaign.getEndDate() == null ? null : new java.sql.Date(campaign.getEndDate().getTime()));
+		stmt.setTimestamp(3, new java.sql.Timestamp(campaign.getStartDate().getTime()));
+		stmt.setTimestamp(4, campaign.getEndDate() == null ? null : new java.sql.Timestamp(campaign.getEndDate().getTime()));
 		stmt.setLong(5, campaign.getId());
 		stmt.executeUpdate();
 		stmt.close();
@@ -90,8 +90,8 @@ public class CampaignService {
 			return null;
 		String name = set.getString(1);
 		String keyword = set.getString(2);
-		java.sql.Date startDateSql = set.getDate(3);
-		java.sql.Date endDateSql = set.getDate(4);
+		java.sql.Timestamp startDateSql = set.getTimestamp(3);
+		java.sql.Timestamp endDateSql = set.getTimestamp(4);
 		Date startDate = startDateSql == null ? null : new Date(startDateSql.getTime());
 		Date endDate = endDateSql == null ? null : new Date(endDateSql.getTime());
 		Campaign result = new CampaignBean();
@@ -113,8 +113,8 @@ public class CampaignService {
 			long id = set.getLong(1);
 			String name = set.getString(2);
 			String keyword = set.getString(3);
-			java.sql.Date startDateSql = set.getDate(4);
-			java.sql.Date endDateSql = set.getDate(5);
+			java.sql.Timestamp startDateSql = set.getTimestamp(4);
+			java.sql.Timestamp endDateSql = set.getTimestamp(5);
 			Date startDate = startDateSql == null ? null : new Date(startDateSql.getTime());
 			Date endDate = endDateSql == null ? null : new Date(endDateSql.getTime());
 			Campaign campaign = new CampaignBean();

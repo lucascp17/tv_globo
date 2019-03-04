@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONObject;
 
 import com.globo.to_na_globo.services.CampaignService;
+import com.globo.to_na_globo.services.TwitterService;
 
 @WebServlet("/cancel_campaign")
 public class CampaignCancellationServlet extends HttpServlet {
@@ -45,6 +46,7 @@ public class CampaignCancellationServlet extends HttpServlet {
 				return;
 			}
 			CampaignService.instance.cancel(campaign);
+			TwitterService.instance.stopService(campaign);
 			response.setHeader("content-type", "application/json");
 			PrintWriter writer = response.getWriter();
 			writer.println("{}");
